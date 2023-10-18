@@ -1,16 +1,36 @@
 const { response } = require('express');
+const Usuario = require('../models/User');
 
-// esto del 'express.response' es solo para tener el autocompletado dentro de la función
-const crearUsuario = (req, res = response) => {
-    const { name, email, password } = req.body;
+const crearUsuario = async(req, res = response) => {
+    const { email, password } = req.body;
 
-    res.status(201).json({
-        ok: true,
-        msg: 'registro',
-        name,
-        email,
-        password
-    });
+    try {
+        let usuario = await Usuario.findOne({ email });
+        
+        if ( usuario ) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Usuario existente con ese correo'
+            });
+        }
+        usuario = new Usuario( req.body );
+    
+        // guardar en la bd
+        await usuario.save(); // <-- Promise
+    
+        res.status(201).json({
+            ok: true,
+            uid: usuario.id,
+            name: usuario.name
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            msg: 'Por favor hable con el admin.'
+        });
+    }
+
 }
 
 const loginUsuario = (req, res = response) => {
